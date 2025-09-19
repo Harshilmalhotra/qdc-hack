@@ -1,45 +1,42 @@
 {
-  "name": "accessibility-eye-tracker",
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "adaptive-hands-free-learning",
   "version": "1.0.0",
-  "description": "Production-ready eye tracking module for EdTech video dashboards with MediaPipe iris tracking",
-  "main": "src/CoreEyeTracker.js",
+  "description": "AI-Powered Hands-Free Learning Platform for Physical Disabilities",
   "type": "module",
   "scripts": {
-    "demo": "python -m http.server 8080",
-    "start": "python -m http.server 8080",
-    "test": "echo \"Test implementation needed\" && exit 1"
+    "dev": "vite",
+    "dev:https": "node enable-https.js && vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest"
   },
-  "repository": {
-    "type": "git",
-    "url": "your-github-repo-url"
-  },
-  "keywords": [
-    "accessibility",
-    "eye-tracking",
-    "mediapipe",
-    "edtech",
-    "video-dashboard",
-    "iris-tracking",
-    "gaze-detection",
-    "webcam",
-    "machine-learning"
-  ],
-  "author": "Your Name",
-  "license": "MIT",
   "dependencies": {
-    "@mediapipe/camera_utils": "^0.3.1640029074",
-    "@mediapipe/control_utils": "^0.6.1629159505",
+    "@mediapipe/camera_utils": "^0.3.1620248257",
     "@mediapipe/drawing_utils": "^0.3.1620248257",
-    "@mediapipe/face_mesh": "^0.4.1633559619"
+    "@mediapipe/face_mesh": "^0.4.1633559619",
+    "@xenova/transformers": "^2.17.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "workbox-precaching": "^7.0.0",
+    "workbox-routing": "^7.0.0",
+    "workbox-strategies": "^7.0.0"
   },
-  "devDependencies": {},
-  "engines": {
-    "node": ">=14.0.0"
-  },
-  "browserslist": [
-    "Chrome >= 80",
-    "Firefox >= 78",
-    "Edge >= 80",
-    "Safari >= 14"
-  ]
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8",
+    "vite-plugin-pwa": "^0.17.4",
+    "vitest": "^1.0.4"
+  }
 }

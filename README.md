@@ -1,354 +1,276 @@
-# 🎯 Accessibility Eye Tracker - Production Ready
+# Adaptive Hands-Free Learning Platform
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![MediaPipe](https://img.shields.io/badge/MediaPipe-Face%20Mesh-blue.svg)](https://mediapipe.dev/)
-[![Browser Support](https://img.shields.io/badge/Browser-Chrome%20%7C%20Firefox%20%7C%20Edge-green.svg)](https://caniuse.com/webrtc)
+A comprehensive React 18 + TypeScript + Tailwind PWA designed for users with physical disabilities, featuring eye-tracking, voice commands, and full accessibility compliance.
 
-A production-ready eye tracking module for EdTech video dashboards using **MediaPipe FaceMesh + WebRTC** for precise iris tracking and gaze detection. Built for accessibility-first learning platforms.
+## 🌟 Features
 
-## ✨ Features
+### 🧩 Core Components
 
-- 🎯 **High-Precision Iris Tracking** - MediaPipe FaceMesh with 478 facial landmarks
-- 📹 **Video Dashboard Integration** - Ready for learning platforms and video players
-- 🔧 **Plug-and-Play** - Easy integration with existing web applications
-- 📊 **Real-time Analytics** - Gaze zones, attention metrics, engagement tracking
-- ♿ **Accessibility First** - WCAG compliant with keyboard fallbacks
-- 🚀 **Performance Optimized** - <10% CPU usage with temporal smoothing
-- 🌐 **Cross-Browser** - Chrome, Firefox, Edge, Safari support
-- 📱 **Responsive** - Works on desktop and tablet devices
+- **Eye-Tracking Engine**: MediaPipe FaceMesh integration with gaze zone detection
+- **Voice Interface**: Whisper AI for low-latency speech recognition + Web Speech API fallback
+- **Interaction Manager**: Unified input handling with conflict resolution
+- **Gamified Dashboard**: Interactive learning cards with XP progression
+- **Progress Analytics**: Local tracking with detailed statistics
+- **Accessibility Controls**: WCAG 2.1 AA compliant with multiple input methods
+
+### ♿ Accessibility Features
+
+- **Multiple Input Methods**: Eye tracking, voice commands, keyboard navigation
+- **High Contrast Mode**: Enhanced visibility for low vision users
+- **Adjustable Font Sizes**: 4 size levels for better readability
+- **Screen Reader Support**: Full ARIA implementation and semantic HTML
+- **Reduced Motion**: Respects user preferences for motion sensitivity
+- **Keyboard Navigation**: Complete keyboard accessibility with focus management
+
+### 🌐 PWA Capabilities
+
+- **Offline Functionality**: Works without internet connection
+- **Background Sync**: Analytics data syncing when online
+- **Push Notifications**: Learning reminders and progress updates
+- **Installable**: Can be installed as a native app
+- **Responsive Design**: Works on desktop, tablet, and mobile
 
 ## 🚀 Quick Start
 
-### 1. Include MediaPipe Scripts
+### Prerequisites
 
-```html
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils@0.6.1629159505/control_utils.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
-```
+- Node.js 18+ 
+- Modern browser with camera/microphone support
+- HTTPS connection (required for camera access)
 
-### 2. Initialize Eye Tracker
+### Installation
 
-```javascript
-import CoreEyeTracker from './src/CoreEyeTracker.js';
-
-// Create video element for camera feed
-const videoElement = document.getElementById('eyeTrackerVideo');
-
-// Initialize with callbacks
-const eyeTracker = new CoreEyeTracker({
-    sensitivity: { x: 3.5, y: 2.5 },
-    smoothing: 3,
-    onGazeUpdate: (data) => {
-        console.log('Gaze:', data.gaze);
-        console.log('Zone:', data.zone);
-    },
-    onZoneChange: (data) => {
-        console.log('Zone changed to:', data.zone);
-        handleZoneAction(data.zone);
-    }
-});
-
-// Start tracking
-await eyeTracker.initialize(videoElement);
-await eyeTracker.start();
-```
-
-### 3. Handle Gaze Events
-
-```javascript
-function handleZoneAction(zone) {
-    switch(zone) {
-        case 'LEFT':
-            // Navigate to previous content
-            break;
-        case 'RIGHT':
-            // Navigate to next content
-            break;
-        case 'CENTER':
-            // Select/play current content
-            break;
-        case 'DOWN':
-            // Show dashboard/controls
-            break;
-    }
-}
-```
-
-## 📖 API Reference
-
-### Constructor Options
-
-```javascript
-const eyeTracker = new CoreEyeTracker({
-    sensitivity: { x: 3.5, y: 2.5 },    // Gaze amplification
-    smoothing: 3,                        // Temporal smoothing (frames)
-    minDetectionConfidence: 0.7,         // Face detection threshold
-    minTrackingConfidence: 0.7,          // Face tracking threshold
-    debugMode: false,                    // Enable debug logging
-    
-    // Callbacks
-    onGazeUpdate: (data) => {},          // Called on every gaze update
-    onZoneChange: (data) => {},          // Called when zone changes
-    onFaceDetected: (detected) => {},    // Called when face detection changes
-    onError: (type, error) => {}         // Called on errors
-});
-```
-
-### Methods
-
-| Method | Description | Returns |
-|--------|-------------|---------|
-| `initialize(videoElement)` | Initialize tracker with video element | `Promise<boolean>` |
-| `start()` | Start eye tracking | `Promise<boolean>` |
-| `stop()` | Stop eye tracking | `void` |
-| `getCurrentGaze()` | Get current gaze data | `Object` |
-| `getAnalytics()` | Get tracking analytics | `Object` |
-| `setZoneDetector(fn)` | Custom zone detection function | `void` |
-
-### Events Data Structure
-
-#### onGazeUpdate
-```javascript
-{
-    gaze: { x: 0.5, y: 0.3, confidence: 0.95 },
-    zone: 'CENTER',
-    raw: { x: 0.52, y: 0.31, confidence: 0.95 },
-    timestamp: 1640995200000
-}
-```
-
-#### onZoneChange
-```javascript
-{
-    zone: 'RIGHT',
-    previousZone: 'CENTER',
-    gaze: { x: 0.8, y: 0.5, confidence: 0.92 },
-    timestamp: 1640995200000
-}
-```
-
-## 🎮 Demo Examples
-
-### 1. Basic Eye Tracking Demo
 ```bash
-python -m http.server 8080
-# Open: http://localhost:8080/demo-basic.html
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-### 2. Video Dashboard Integration
-```bash
-python -m http.server 8080
-# Open: http://localhost:8080/demo-video-dashboard.html
+### Development with HTTPS
+
+The app requires HTTPS for camera access. The Vite config includes HTTPS by default for development.
+
+## 🎮 Usage Guide
+
+### Navigation Methods
+
+#### 👁️ Eye Tracking
+- **Look Left**: Navigate to previous item
+- **Look Right**: Navigate to next item  
+- **Look Center**: Select current item
+- **Look Down**: Open dashboard/menu
+
+#### 🎤 Voice Commands
+- "next" / "forward" → Navigate forward
+- "back" / "previous" → Navigate backward
+- "select" / "choose" → Select current item
+- "dashboard" / "menu" → Open main menu
+- "repeat" / "read" → Read current content aloud
+
+#### ⌨️ Keyboard Navigation
+- **Arrow Keys**: Navigate in all directions
+- **Enter/Space**: Select or activate
+- **Tab**: Focus next element
+- **Shift+Tab**: Focus previous element
+- **Ctrl+D**: Toggle debug overlay
+- **Ctrl+Shift+H**: Toggle high contrast
+- **Ctrl+Shift+L**: Toggle large text
+
+### Accessibility Settings
+
+Access the accessibility panel via the wheelchair icon (bottom-left):
+
+- **High Contrast Mode**: Black background with yellow accents
+- **Font Size Control**: Small → Medium → Large → XL
+- **Reduced Motion**: Disables animations and transitions
+- **Screen Reader Mode**: Enhanced navigation for screen readers
+
+## 🏗️ Architecture
+
+### Core Modules
+
+```
+src/
+├── core/
+│   ├── eyeTracker.ts      # MediaPipe eye tracking
+│   ├── voiceInterface.ts  # Web Speech API wrapper
+│   ├── interactionManager.ts # Input coordination
+│   └── analytics.ts       # Progress tracking
+├── components/
+│   ├── Dashboard.tsx      # Main learning interface
+│   ├── LessonCard.tsx     # Interactive lesson cards
+│   ├── ProgressBar.tsx    # XP and level display
+│   ├── AccessibilityProvider.tsx # Settings context
+│   ├── AccessibilityControls.tsx # Settings panel
+│   └── DebugOverlay.tsx   # Development tools
+├── types/
+│   └── index.ts          # TypeScript definitions
+└── utils/
+    └── mockData.ts       # Sample lesson content
 ```
 
-### 3. Working Eye Tracker (Reference)
-```bash
-python -m http.server 8080
-# Open: http://localhost:8080/working-eye-tracker.html
-```
+### Data Flow
 
-## 🎯 Zone Detection
+1. **Input Detection**: Eye tracker, voice interface, or keyboard
+2. **Event Processing**: Interaction manager handles conflicts and priorities
+3. **Action Dispatch**: Mapped to dashboard actions (next, back, select, etc.)
+4. **UI Updates**: React components respond to state changes
+5. **Analytics Tracking**: Progress and interaction data stored locally
 
-Default zones (can be customized):
+## 🧪 Testing & Debug
 
-```
-┌─────────────────────────────┐
-│  LEFT    │  CENTER  │ RIGHT │
-│          │          │       │
-│          │    👁️    │       │
-│          │          │       │
-├──────────┼──────────┼───────┤
-│         DOWN         │       │
-└─────────────────────────────┘
-```
+### Debug Mode
 
-### Custom Zone Detection
+Press `Ctrl+D` or click the "Debug" button to access:
 
-```javascript
-eyeTracker.setZoneDetector((gazePoint) => {
-    const { x, y } = gazePoint;
-    
-    // Custom video player zones
-    if (x >= 0.1 && x <= 0.4 && y >= 0.1 && y <= 0.3) return 'PLAY_PAUSE';
-    if (x >= 0.1 && x <= 0.7 && y >= 0.9 && y <= 1.0) return 'TIMELINE';
-    if (x >= 0.85 && x <= 1.0 && y >= 0.1 && y <= 0.25) return 'VOLUME';
-    if (x >= 0.2 && x <= 0.8 && y >= 0.35 && y <= 0.85) return 'CONTENT';
-    
-    return 'OUTSIDE';
-});
-```
+- Real-time eye tracking status
+- Voice recognition state
+- Interaction history
+- Analytics data
+- Manual action triggers
+- Calibration controls
 
-## 🏗️ Integration Examples
+### Mock Mode
 
-### React Component
+If camera/microphone access is denied, the app automatically falls back to keyboard-only mode with full functionality preserved.
 
-```jsx
-import { useEffect, useRef, useState } from 'react';
-import CoreEyeTracker from './CoreEyeTracker.js';
+### Cross-Browser Testing
 
-function EyeTrackingVideoPlayer() {
-    const videoRef = useRef(null);
-    const [eyeTracker, setEyeTracker] = useState(null);
-    const [currentZone, setCurrentZone] = useState('NONE');
-    
-    useEffect(() => {
-        const tracker = new CoreEyeTracker({
-            onZoneChange: (data) => {
-                setCurrentZone(data.zone);
-                handleVideoControl(data.zone);
-            }
-        });
-        
-        tracker.initialize(videoRef.current).then(() => {
-            tracker.start();
-            setEyeTracker(tracker);
-        });
-        
-        return () => tracker?.stop();
-    }, []);
-    
-    function handleVideoControl(zone) {
-        if (zone === 'PLAY_PAUSE') {
-            // Toggle video playback
-        }
-    }
-    
-    return (
-        <div>
-            <video ref={videoRef} style={{ display: 'none' }} />
-            <div>Current Zone: {currentZone}</div>
-        </div>
-    );
-}
-```
+Tested on:
+- ✅ Chrome 90+ (full feature support)
+- ✅ Edge 90+ (full feature support)  
+- ⚠️ Firefox 88+ (limited MediaPipe support)
+- ⚠️ Safari 14+ (limited Web Speech API)
 
-### Vue.js Component
+## 📊 Analytics & Progress
 
-```vue
-<template>
-    <div>
-        <video ref="eyeVideo" style="display: none"></video>
-        <div class="zone-display">{{ currentZone }}</div>
-    </div>
-</template>
+### Tracked Metrics
 
-<script>
-import CoreEyeTracker from './CoreEyeTracker.js';
+- **XP System**: Points earned for interactions and completions
+- **Session Data**: Duration, interaction count, gaze patterns
+- **Learning Progress**: Completed lessons, difficulty progression
+- **Accessibility Usage**: Input method preferences, setting changes
 
-export default {
-    data() {
-        return {
-            eyeTracker: null,
-            currentZone: 'NONE'
-        }
-    },
-    async mounted() {
-        this.eyeTracker = new CoreEyeTracker({
-            onZoneChange: (data) => {
-                this.currentZone = data.zone;
-            }
-        });
-        
-        await this.eyeTracker.initialize(this.$refs.eyeVideo);
-        await this.eyeTracker.start();
-    },
-    beforeUnmount() {
-        this.eyeTracker?.stop();
-    }
-}
-</script>
-```
+### Data Storage
+
+All data is stored locally using:
+- **localStorage**: User preferences and progress
+- **IndexedDB**: Lesson content and offline data
+- **Service Worker Cache**: Static assets and API responses
+
+### Privacy
+
+- No data is sent to external servers
+- All processing happens locally
+- Camera/microphone data is not stored
+- Export/import functionality for data portability
 
 ## 🔧 Configuration
 
-### Sensitivity Tuning
+### Eye Tracking Calibration
 
-```javascript
-// High sensitivity (small eye movements)
-{ sensitivity: { x: 4.0, y: 3.0 } }
+1. Ensure good lighting and camera positioning
+2. Look at the center of the screen
+3. Click "Calibrate Eye Tracker" in debug mode
+4. Test gaze zones with the debug overlay
 
-// Low sensitivity (larger eye movements required)
-{ sensitivity: { x: 2.0, y: 1.5 } }
+### Voice Recognition Setup
 
-// Balanced (recommended)
-{ sensitivity: { x: 3.5, y: 2.5 } }
+1. Allow microphone access when prompted
+2. Speak clearly and at normal volume
+3. Use supported commands (see voice commands list)
+4. Check browser compatibility for Web Speech API
+
+### Accessibility Customization
+
+All settings are automatically saved and restored:
+- Theme preferences (high contrast, font size)
+- Input method preferences
+- Motion and animation settings
+- Screen reader optimizations
+
+## 🚀 Deployment
+
+### Build Process
+
+```bash
+# Production build
+npm run build
+
+# The dist/ folder contains:
+# - Optimized React bundle
+# - Service worker for PWA
+# - Manifest and icons
+# - Static assets
 ```
 
-### Smoothing Options
+### Hosting Requirements
 
-```javascript
-// No smoothing (jittery but responsive)
-{ smoothing: 1 }
+- **HTTPS**: Required for camera/microphone access
+- **Service Worker Support**: For offline functionality
+- **Modern Browser Support**: ES2020+ features used
 
-// Light smoothing (good balance)
-{ smoothing: 3 }
+### PWA Installation
 
-// Heavy smoothing (stable but slower)
-{ smoothing: 5 }
-```
-
-## 🎯 Performance Optimization
-
-- **Frame Rate**: Automatically throttled to 30 FPS
-- **CPU Usage**: Typically <10% on modern devices
-- **Memory**: Bounded gaze history prevents memory leaks
-- **Network**: CDN-hosted MediaPipe for fast loading
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-1. **Camera Permission Denied**
-   ```javascript
-   eyeTracker.onError = (type, error) => {
-       if (type === 'START_ERROR' && error.name === 'NotAllowedError') {
-           alert('Camera permission required for eye tracking');
-       }
-   };
-   ```
-
-2. **MediaPipe Loading Failed**
-   ```javascript
-   // Ensure scripts are loaded before initializing
-   await new Promise(resolve => setTimeout(resolve, 1000));
-   await eyeTracker.initialize(videoElement);
-   ```
-
-3. **Poor Tracking Accuracy**
-   - Ensure good lighting conditions
-   - Position face 50-80cm from camera
-   - Adjust sensitivity settings
-   - Check for stable internet connection
-
-## 📊 Browser Compatibility
-
-| Browser | Version | Support |
-|---------|---------|---------|
-| Chrome | 80+ | ✅ Full |
-| Firefox | 78+ | ✅ Full |
-| Edge | 80+ | ✅ Full |
-| Safari | 14+ | ⚠️ Limited |
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
+Users can install the app:
+1. Visit the site in a supported browser
+2. Look for "Install App" prompt or menu option
+3. App will be available as a native application
+4. Works offline after installation
 
 ## 🤝 Contributing
 
+### Development Setup
+
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Install dependencies: `npm install`
+3. Start development server: `npm run dev`
+4. Make changes and test thoroughly
+5. Submit pull request with detailed description
 
-## 📞 Support
+### Code Standards
 
-- 📧 Email: support@example.com
-- 💬 Issues: [GitHub Issues](https://github.com/your-repo/issues)
-- 📖 Docs: [Full Documentation](https://your-docs-site.com)
+- **TypeScript**: Strict mode enabled
+- **ESLint**: Configured for React and accessibility
+- **Prettier**: Code formatting
+- **WCAG 2.1 AA**: Accessibility compliance required
 
----
+### Testing Checklist
 
-Made with ❤️ for accessible EdTech platforms
+- [ ] Eye tracking works with camera
+- [ ] Voice commands recognized correctly
+- [ ] Keyboard navigation complete
+- [ ] Screen reader compatibility
+- [ ] High contrast mode functional
+- [ ] Offline mode works
+- [ ] Mobile responsive
+- [ ] Cross-browser tested
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🆘 Support
+
+For issues or questions:
+1. Check the debug overlay for system status
+2. Verify browser compatibility
+3. Test with keyboard fallback mode
+4. Review console for error messages
+
+## 🎯 Roadmap
+
+- [ ] Advanced eye tracking calibration
+- [ ] Multi-language voice support
+- [ ] Custom lesson creation tools
+- [ ] Progress sharing and collaboration
+- [ ] Advanced analytics dashboard
+- [ ] Integration with learning management systems
