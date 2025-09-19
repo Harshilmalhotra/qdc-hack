@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📹 Simple Video Dashboard - Eye Tracking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        
+        .video-section {
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .main-video {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .gaze-indicator {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #ff0000;
+            border: 3px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 3px 10px rgba(255,0,0,0.6);
+            display: none;
+            z-index: 100;
+        }
+        
+        .video-zone {
+            position: absolute;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .video-zone.active {
+            border-color: #00ff00;
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+        }
+        
+        .zone-play { top: 10%; left: 10%; width: 30%; height: 20%; }
+        .zone-content { top: 35%; left: 20%; width: 60%; height: 50%; }
+        
+        .controls-panel {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .eye-tracker-mini {
+            width: 100%;
+            height: 200px;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 20px;
+        }
+        
+        .eye-tracker-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+        
+        .status-panel {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        
+        .control-button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            background: #007acc;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .control-button:hover:not(:disabled) {
+            background: #005a9e;
+        }
+        
+        .control-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .control-button.active {
+            background: #28a745;
+        }
+        
+        .zone-info {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+            border: 2px solid #333;
+        }
+        
+        .zone-info.active {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+    </style>
+    
+    <!-- MediaPipe Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils@0.6.1629159505/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Video Section -->
+        <div class="video-section">
+            <video id="mainVideo" class="main-video" controls>
+                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                <p>Your browser does not support the video tag.</p>
+            </video>
+            
+            <!-- Eye Tracking Overlay -->
+            <div class="video-overlay" id="videoOverlay">
+                <!-- Gaze indicator -->
+                <div id="gazeIndicator" class="gaze-indicator"></div>
+                
+                <!-- Simple zones -->
+                <div class="video-zone zone-play" id="zonePlay">
+                    ⏯️ PLAY/PAUSE ZONE
+                </div>
+                <div class="video-zone zone-content" id="zoneContent">
+                    📺 CONTENT VIEWING ZONE
+                </div>
+            </div>
+        </div>
+        
+        <!-- Controls Panel -->
+        <div class="controls-panel">
+            <!-- Eye Tracker Mini View -->
+            <div class="eye-tracker-mini">
+                <video id="eyeTrackerVideo" class="eye-tracker-video" autoplay muted playsinline></video>
+            </div>
+            
+            <!-- Controls -->
+            <button id="startBtn" class="control-button">🎯 Start Eye Tracking</button>
+            
+            <!-- Status Display -->
+            <div class="status-panel">
+                <div><strong>Status:</strong> <span id="trackingStatus">Ready to start</span></div>
+                <div><strong>Face:</strong> <span id="faceStatus">Not detected</span></div>
+                <div><strong>Gaze Zone:</strong> <span id="currentZone">None</span></div>
+            </div>
+            
+            <!-- Zone Information -->
+            <div class="zone-info" id="zonePlayInfo">
+                👁️ Look at PLAY/PAUSE zone to control video
+            </div>
+            <div class="zone-info" id="zoneContentInfo">
+                👁️ Look at CONTENT zone for viewing
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SimpleVideoDashboard {
+            constructor() {
+                this.faceMesh = null;
+                this.camera = null;
+                this.isTracking = false;
+                this.currentZone = null;
+                this.lastPlayPauseTime = 0;
+                this.playPauseCooldown = 2000; // 2 second cooldown
+                
+                // Iris tracking constants
+                this.LEFT_IRIS_INDICES = [468, 469, 470, 471, 472];
+                this.RIGHT_IRIS_INDICES = [473, 474, 475, 476, 477];
+                
+                this.initElements();
+                this.setupEventListeners();
+            }
+            
+            initElements() {
+                this.mainVideo = document.getElementById('mainVideo');
+                this.eyeTrackerVideo = document.getElementById('eyeTrackerVideo');
+                this.gazeIndicator = document.getElementById('gazeIndicator');
+                this.startBtn = document.getElementById('startBtn');
+                
+                // Status elements
+                this.trackingStatus = document.getElementById('trackingStatus');
+                this.faceStatus = document.getElementById('faceStatus');
+                this.currentZoneEl = document.getElementById('currentZone');
+                
+                // Zone elements
+                this.zonePlay = document.getElementById('zonePlay');
+                this.zoneContent = document.getElementById('zoneContent');
+                this.zonePlayInfo = document.getElementById('zonePlayInfo');
+                this.zoneContentInfo = document.getElementById('zoneContentInfo');
+            }
+            
+            setupEventListeners() {
+                this.startBtn.addEventListener('click', () => this.toggleEyeTracking());
+            }
+            
+            // FUNCTION 1: Start/Stop Eye Tracking
+            async toggleEyeTracking() {
+                if (!this.isTracking) {
+                    await this.startEyeTracking();
+                } else {
+                    this.stopEyeTracking();
+                }
+            }
+            
+            async startEyeTracking() {
+                try {
+                    this.trackingStatus.textContent = 'Starting camera...';
+                    this.startBtn.textContent = '⏳ Starting...';
+                    this.startBtn.disabled = true;
+                    
+                    // Get camera access
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'user', width: 640, height: 480 }
+                    });
+                    
+                    this.eyeTrackerVideo.srcObject = stream;
+                    
+                    // Wait for MediaPipe to load
+                    this.trackingStatus.textContent = 'Loading MediaPipe...';
+                    await this.waitForMediaPipe();
+                    
+                    // Setup MediaPipe
+                    await this.setupMediaPipe();
+                    
+                    // Start camera
+                    await this.camera.start();
+                    
+                    this.isTracking = true;
+                    this.startBtn.textContent = '⏹️ Stop Eye Tracking';
+                    this.startBtn.disabled = false;
+                    this.startBtn.classList.add('active');
+                    this.trackingStatus.textContent = 'Eye tracking active';
+                    
+                } catch (error) {
+                    console.error('Eye tracking start error:', error);
+                    this.trackingStatus.textContent = 'Error: ' + error.message;
+                    this.startBtn.textContent = '🎯 Start Eye Tracking';
+                    this.startBtn.disabled = false;
+                }
+            }
+            
+            stopEyeTracking() {
+                this.isTracking = false;
+                
+                if (this.camera) {
+                    this.camera.stop();
+                }
+                
+                // Stop video stream
+                const stream = this.eyeTrackerVideo.srcObject;
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    this.eyeTrackerVideo.srcObject = null;
+                }
+                
+                this.gazeIndicator.style.display = 'none';
+                this.clearZoneHighlights();
+                
+                this.startBtn.textContent = '🎯 Start Eye Tracking';
+                this.startBtn.classList.remove('active');
+                this.trackingStatus.textContent = 'Eye tracking stopped';
+                this.faceStatus.textContent = 'Not detected';
+                this.currentZoneEl.textContent = 'None';
+            }
+            
+            async waitForMediaPipe() {
+                let attempts = 0;
+                while (typeof FaceMesh === 'undefined' || typeof Camera === 'undefined') {
+                    if (attempts > 50) throw new Error('MediaPipe failed to load');
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+            }
+            
+            async setupMediaPipe() {
+                this.faceMesh = new FaceMesh({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+                });
+                
+                this.faceMesh.setOptions({
+                    maxNumFaces: 1,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.7,
+                    minTrackingConfidence: 0.7
+                });
+                
+                this.faceMesh.onResults((results) => this.onResults(results));
+                
+                this.camera = new Camera(this.eyeTrackerVideo, {
+                    onFrame: async () => {
+                        if (this.faceMesh && this.isTracking) {
+                            await this.faceMesh.send({ image: this.eyeTrackerVideo });
+                        }
+                    },
+                    width: 640,
+                    height: 480
+                });
+            }
+            
+            onResults(results) {
+                if (!this.isTracking) return;
+                
+                if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+                    this.faceStatus.textContent = 'No face detected';
+                    this.gazeIndicator.style.display = 'none';
+                    return;
+                }
+                
+                const landmarks = results.multiFaceLandmarks[0];
+                this.faceStatus.textContent = 'Face detected ✅';
+                
+                if (landmarks.length < 478) {
+                    this.faceStatus.textContent = 'Face detected - Need better lighting';
+                    return;
+                }
+                
+                // Calculate gaze and detect zones
+                const gazePoint = this.calculateSimpleGaze(landmarks);
+                if (gazePoint) {
+                    this.updateGazeDisplay(gazePoint);
+                    this.detectAndHandleZones(gazePoint);
+                }
+            }
+            
+            calculateSimpleGaze(landmarks) {
+                try {
+                    // Get iris points
+                    const leftIris = this.calculateCentroid(
+                        this.LEFT_IRIS_INDICES.map(i => landmarks[i])
+                    );
+                    const rightIris = this.calculateCentroid(
+                        this.RIGHT_IRIS_INDICES.map(i => landmarks[i])
+                    );
+                    
+                    // Average both eyes
+                    const avgX = (leftIris.x + rightIris.x) / 2;
+                    const avgY = (leftIris.y + rightIris.y) / 2;
+                    
+                    // Simple mapping for 2 zones
+                    let gazeX = (avgX - 0.5) * 2.5 + 0.5;
+                    let gazeY = (avgY - 0.5) * 2.0 + 0.5;
+                    
+                    return {
+                        x: Math.max(0, Math.min(1, gazeX)),
+                        y: Math.max(0, Math.min(1, gazeY))
+                    };
+                } catch (error) {
+                    console.error('Gaze calculation error:', error);
+                    return null;
+                }
+            }
+            
+            calculateCentroid(points) {
+                const sum = points.reduce((acc, point) => ({
+                    x: acc.x + point.x,
+                    y: acc.y + point.y
+                }), { x: 0, y: 0 });
+                
+                return {
+                    x: sum.x / points.length,
+                    y: sum.y / points.length
+                };
+            }
+            
+            updateGazeDisplay(gazePoint) {
+                const videoRect = this.mainVideo.getBoundingClientRect();
+                const overlayRect = this.videoOverlay.getBoundingClientRect();
+                
+                const x = gazePoint.x * overlayRect.width;
+                const y = gazePoint.y * overlayRect.height;
+                
+                this.gazeIndicator.style.display = 'block';
+                this.gazeIndicator.style.left = x + 'px';
+                this.gazeIndicator.style.top = y + 'px';
+            }
+            
+            // FUNCTION 2: Zone Detection and Video Control
+            detectAndHandleZones(gazePoint) {
+                const zone = this.detectZone(gazePoint);
+                
+                if (zone !== this.currentZone) {
+                    this.updateZoneDisplay(zone);
+                    this.handleZoneAction(zone);
+                    this.currentZone = zone;
+                }
+            }
+            
+            detectZone(gazePoint) {
+                const { x, y } = gazePoint;
+                
+                // Play/Pause zone: top-left area
+                if (x >= 0.1 && x <= 0.4 && y >= 0.1 && y <= 0.3) {
+                    return 'PLAY';
+                }
+                
+                // Content zone: center area
+                if (x >= 0.2 && x <= 0.8 && y >= 0.35 && y <= 0.85) {
+                    return 'CONTENT';
+                }
+                
+                return 'OUTSIDE';
+            }
+            
+            handleZoneAction(zone) {
+                const now = Date.now();
+                
+                if (zone === 'PLAY' && (now - this.lastPlayPauseTime) > this.playPauseCooldown) {
+                    this.toggleVideoPlayback();
+                    this.lastPlayPauseTime = now;
+                }
+            }
+            
+            toggleVideoPlayback() {
+                if (this.mainVideo.paused) {
+                    this.mainVideo.play();
+                    console.log('👁️ Eye gaze triggered: Video PLAY');
+                } else {
+                    this.mainVideo.pause();
+                    console.log('👁️ Eye gaze triggered: Video PAUSE');
+                }
+            }
+            
+            // FUNCTION 3: Zone Display and Visual Feedback
+            updateZoneDisplay(zone) {
+                this.clearZoneHighlights();
+                this.currentZoneEl.textContent = zone.replace('_', ' ');
+                
+                // Highlight active zone
+                if (zone === 'PLAY') {
+                    this.zonePlay.classList.add('active');
+                    this.zonePlayInfo.classList.add('active');
+                } else if (zone === 'CONTENT') {
+                    this.zoneContent.classList.add('active');
+                    this.zoneContentInfo.classList.add('active');
+                }
+            }
+            
+            clearZoneHighlights() {
+                this.zonePlay.classList.remove('active');
+                this.zoneContent.classList.remove('active');
+                this.zonePlayInfo.classList.remove('active');
+                this.zoneContentInfo.classList.remove('active');
+            }
+        }
+        
+        // Initialize the dashboard
+        const dashboard = new SimpleVideoDashboard();
+    </script>
+</body>
+</html>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .dashboard-container {
+            display: grid;
+            grid-template-areas: 
+                "video controls"
+                "analytics tools";
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 20px;
+            padding: 20px;
+            height: 100vh;
+        }
+        
+        .video-section {
+            grid-area: video;
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .main-video {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .gaze-heatmap {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 0, 0, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fadeOut 3s forwards;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+        
+        .eye-tracker-mini {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            z-index: 100;
+        }
+        
+        .controls-section {
+            grid-area: controls;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .analytics-section {
+            grid-area: analytics;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .tools-section {
+            grid-area: tools;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .control-button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #007acc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .control-button:hover {
+            background: #005a9e;
+        }
+        
+        .control-button.active {
+            background: #28a745;
+        }
+        
+        .analytics-item {
+            margin: 15px 0;
+            padding: 10px;
+            background: #3a3a3a;
+            border-radius: 6px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #4a4a4a;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+            transition: width 0.3s ease;
+        }
+        
+        .gaze-zones {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .video-zone {
+            position: absolute;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .video-zone.active {
+            border-color: #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+            font-weight: bold;
+        }
+        
+        .zone-play-pause { top: 10%; left: 10%; width: 25%; height: 15%; }
+        .zone-timeline { bottom: 10%; left: 10%; width: 60%; height: 10%; }
+        .zone-volume { top: 10%; right: 10%; width: 15%; height: 15%; }
+        .zone-fullscreen { bottom: 10%; right: 10%; width: 15%; height: 10%; }
+        .zone-content { top: 30%; left: 20%; width: 60%; height: 50%; }
+        
+        .status-panel {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+    </style>
+    
+    <!-- MediaPipe Scripts - Using more reliable CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils@0.6.1629159505/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Main Video Section -->
+        <div class="video-section">
+            <video id="mainVideo" class="main-video" controls autoplay muted>
+                <!-- Using a more reliable video source -->
+                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                <source src="https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" type="video/mp4">
+                <!-- Fallback message -->
+                <p>Your browser does not support the video tag. <br>
+                <a href="https://www.w3schools.com/html/mov_bbb.mp4">Download the video</a> instead.</p>
+            </video>
+            
+            <!-- Eye Tracking Overlay -->
+            <div class="video-overlay" id="videoOverlay">
+                <!-- Gaze indicator -->
+                <div id="gazeIndicator" style="
+                    position: absolute;
+                    width: 15px;
+                    height: 15px;
+                    background: #ff0000;
+                    border: 3px solid white;
+                    border-radius: 50%;
+                    pointer-events: none;
+                    z-index: 100;
+                    transform: translate(-50%, -50%);
+                    box-shadow: 0 3px 10px rgba(255,0,0,0.6);
+                    display: none;
+                "></div>
+                
+                <!-- Gaze zones for video controls -->
+                <div class="gaze-zones">
+                    <div class="video-zone zone-play-pause" id="zonePlayPause">
+                        ⏯️ PLAY/PAUSE
+                    </div>
+                    <div class="video-zone zone-timeline" id="zoneTimeline">
+                        ⏮️ TIMELINE ⏭️
+                    </div>
+                    <div class="video-zone zone-volume" id="zoneVolume">
+                        🔊 VOLUME
+                    </div>
+                    <div class="video-zone zone-fullscreen" id="zoneFullscreen">
+                        ⛶ FULLSCREEN
+                    </div>
+                    <div class="video-zone zone-content" id="zoneContent">
+                        📺 CONTENT AREA
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Eye Tracker Mini View -->
+        <div class="eye-tracker-mini">
+            <video id="eyeTrackerVideo" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+        </div>
+        
+        <!-- Controls Section -->
+        <div class="controls-section">
+            <h3>🎮 Eye Tracking Controls</h3>
+            <button class="control-button" id="startEyeTracking">▶️ Start Eye Tracking</button>
+            <button class="control-button" id="calibrateGaze">🎯 Calibrate for Video</button>
+            <button class="control-button" id="toggleHeatmap">🔥 Toggle Heatmap</button>
+            <button class="control-button" id="toggleZones">👁️ Toggle Gaze Zones</button>
+            
+            <div class="status-panel" id="trackingStatus">
+                Eye Tracking: Stopped
+            </div>
+        </div>
+        
+        <!-- Analytics Section -->
+        <div class="analytics-section">
+            <h3>📊 Video Analytics</h3>
+            
+            <div class="analytics-item">
+                <strong>Attention Score</strong>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="attentionProgress" style="width: 75%;"></div>
+                </div>
+                <span id="attentionScore">75%</span>
+            </div>
+            
+            <div class="analytics-item">
+                <strong>Content Focus Time</strong>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="focusProgress" style="width: 60%;"></div>
+                </div>
+                <span id="focusTime">3:45 / 6:20</span>
+            </div>
+            
+            <div class="analytics-item">
+                <strong>Interaction Events</strong>
+                <div id="interactionList">
+                    <div>▶️ Play/Pause - 3 times</div>
+                    <div>⏭️ Seek Forward - 2 times</div>
+                    <div>🔊 Volume Adjust - 1 time</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tools Section -->
+        <div class="tools-section">
+            <h3>🛠️ Dashboard Tools</h3>
+            
+            <button class="control-button" id="exportData">📤 Export Gaze Data</button>
+            <button class="control-button" id="generateReport">📋 Generate Report</button>
+            <button class="control-button" id="shareSession">🔗 Share Session</button>
+            
+            <div class="analytics-item">
+                <strong>Current Gaze Zone</strong>
+                <div id="currentZone">CONTENT AREA</div>
+            </div>
+            
+            <div class="analytics-item">
+                <strong>Session Duration</strong>
+                <div id="sessionDuration">12:34</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class VideoDashboardEyeTracker {
+            constructor() {
+                this.faceMesh = null;
+                this.camera = null;
+                this.isTracking = false;
+                this.gazeData = [];
+                this.heatmapEnabled = true; // Enable by default to see tracking
+                this.zonesVisible = true;
+                this.currentZone = null;
+                this.sessionStartTime = Date.now();
+                
+                // Analytics tracking
+                this.analytics = {
+                    attentionScore: 75,
+                    focusTime: 0,
+                    totalTime: 0,
+                    interactions: [],
+                    gazeHeatmap: []
+                };
+                
+                // Iris tracking data from working-eye-tracker.html
+                this.lastResults = null;
+                this.gazeHistory = [];
+                this.gazeHistorySize = 3; // Reduced for more responsiveness
+                this.smoothedGaze = { x: 0.5, y: 0.5 };
+                
+                // MediaPipe landmark indices for iris and eye bounds
+                this.LEFT_IRIS_INDICES = [468, 469, 470, 471, 472];   // Left iris
+                this.RIGHT_IRIS_INDICES = [473, 474, 475, 476, 477];  // Right iris
+                
+                // Correct eye corner landmarks
+                this.LEFT_EYE_CORNERS = { inner: 133, outer: 33 };    // Left eye corners
+                this.RIGHT_EYE_CORNERS = { inner: 362, outer: 263 };  // Right eye corners
+                
+                // Additional eye boundary points for better tracking
+                this.LEFT_EYE_BOUNDS = { inner: 133, outer: 33, upper: 159, lower: 145 };
+                this.RIGHT_EYE_BOUNDS = { inner: 362, outer: 263, upper: 386, lower: 374 };
+                
+                this.initElements();
+                this.setupEventListeners();
+                this.startAnalyticsUpdater();
+            }
+            
+            initElements() {
+                // Video elements
+                this.mainVideo = document.getElementById('mainVideo');
+                this.eyeTrackerVideo = document.getElementById('eyeTrackerVideo');
+                this.videoOverlay = document.getElementById('videoOverlay');
+                this.gazeIndicator = document.getElementById('gazeIndicator');
+                
+                // Control elements
+                this.startBtn = document.getElementById('startEyeTracking');
+                this.calibrateBtn = document.getElementById('calibrateGaze');
+                this.heatmapBtn = document.getElementById('toggleHeatmap');
+                this.zonesBtn = document.getElementById('toggleZones');
+                
+                // Status elements
+                this.trackingStatus = document.getElementById('trackingStatus');
+                this.currentZoneEl = document.getElementById('currentZone');
+                this.attentionScore = document.getElementById('attentionScore');
+                this.focusTime = document.getElementById('focusTime');
+                this.sessionDuration = document.getElementById('sessionDuration');
+                
+                // Zone elements
+                this.zones = {
+                    playPause: document.getElementById('zonePlayPause'),
+                    timeline: document.getElementById('zoneTimeline'),
+                    volume: document.getElementById('zoneVolume'),
+                    fullscreen: document.getElementById('zoneFullscreen'),
+                    content: document.getElementById('zoneContent')
+                };
+            }
+            
+            setupEventListeners() {
+                this.startBtn.addEventListener('click', () => this.toggleEyeTracking());
+                this.calibrateBtn.addEventListener('click', () => this.calibrateForVideo());
+                this.heatmapBtn.addEventListener('click', () => this.toggleHeatmap());
+                this.zonesBtn.addEventListener('click', () => this.toggleZones());
+                
+                // Video event listeners
+                this.mainVideo.addEventListener('play', () => this.logInteraction('play'));
+                this.mainVideo.addEventListener('pause', () => this.logInteraction('pause'));
+                this.mainVideo.addEventListener('seeked', () => this.logInteraction('seek'));
+                this.mainVideo.addEventListener('volumechange', () => this.logInteraction('volume'));
+            }
+            
+            async toggleEyeTracking() {
+                if (!this.isTracking) {
+                    await this.startEyeTracking();
+                } else {
+                    this.stopEyeTracking();
+                }
+            }
+            
+            async startEyeTracking() {
+                try {
+                    console.log('🚀 Starting eye tracking...');
+                    this.trackingStatus.textContent = 'Initializing camera...';
+                    
+                    // Setup camera first
+                    console.log('📹 Requesting camera access...');
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { 
+                            facingMode: 'user', 
+                            width: { ideal: 640 }, 
+                            height: { ideal: 480 },
+                            frameRate: { ideal: 30 }
+                        }
+                    });
+                    
+                    this.eyeTrackerVideo.srcObject = stream;
+                    console.log('✅ Camera access granted');
+                    this.trackingStatus.textContent = 'Camera connected. Loading MediaPipe...';
+                    
+                    // Wait for MediaPipe to load
+                    await this.waitForMediaPipe();
+                    console.log('✅ MediaPipe ready');
+                    
+                    // Setup MediaPipe
+                    this.trackingStatus.textContent = 'Setting up face detection...';
+                    await this.setupMediaPipe();
+                    console.log('✅ MediaPipe configured');
+                    
+                    // Wait for video to be ready
+                    await new Promise(resolve => {
+                        if (this.eyeTrackerVideo.readyState >= 2) {
+                            resolve();
+                        } else {
+                            this.eyeTrackerVideo.addEventListener('loadeddata', resolve, { once: true });
+                        }
+                    });
+                    
+                    this.isTracking = true;
+                    this.startBtn.textContent = '⏹️ Stop Eye Tracking';
+                    this.startBtn.classList.add('active');
+                    this.trackingStatus.textContent = '👁️ Eye Tracking: Active - Look around!';
+                    
+                    // Show gaze indicator
+                    this.gazeIndicator.style.display = 'block';
+                    
+                    // Start camera
+                    console.log('🎬 Starting camera processing...');
+                    this.camera.start();
+                    
+                } catch (error) {
+                    console.error('❌ Eye tracking initialization failed:', error);
+                    this.trackingStatus.textContent = `❌ Failed: ${error.message}`;
+                    
+                    // Provide helpful error messages
+                    if (error.name === 'NotAllowedError') {
+                        this.trackingStatus.textContent = '❌ Camera access denied. Please allow camera access and try again.';
+                    } else if (error.name === 'NotFoundError') {
+                        this.trackingStatus.textContent = '❌ No camera found. Please connect a camera and try again.';
+                    }
+                }
+            }
+            
+            stopEyeTracking() {
+                this.isTracking = false;
+                this.startBtn.textContent = '▶️ Start Eye Tracking';
+                this.startBtn.classList.remove('active');
+                this.trackingStatus.textContent = 'Eye Tracking: Stopped';
+                
+                // Hide gaze indicator
+                this.gazeIndicator.style.display = 'none';
+                
+                if (this.camera) {
+                    this.camera.stop();
+                }
+                
+                // Stop camera stream
+                const stream = this.eyeTrackerVideo.srcObject;
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            }
+            
+            async waitForMediaPipe() {
+                console.log('🔄 Waiting for MediaPipe to load...');
+                this.trackingStatus.textContent = 'Loading MediaPipe libraries...';
+                
+                // Try multiple loading strategies
+                for (let strategy = 0; strategy < 3; strategy++) {
+                    console.log(`Trying loading strategy ${strategy + 1}...`);
+                    
+                    let attempts = 0;
+                    const maxAttempts = 50; // 5 seconds per strategy
+                    
+                    while (attempts < maxAttempts) {
+                        // Check different variations of MediaPipe availability
+                        const faceMeshReady = (typeof FaceMesh !== 'undefined') || 
+                                            (typeof window.FaceMesh !== 'undefined') ||
+                                            (window.mediapipe && window.mediapipe.FaceMesh);
+                        
+                        const cameraReady = (typeof Camera !== 'undefined') || 
+                                          (typeof window.Camera !== 'undefined') ||
+                                          (window.mediapipe && window.mediapipe.Camera);
+                        
+                        if (faceMeshReady && cameraReady) {
+                            console.log('✅ MediaPipe loaded successfully with strategy', strategy + 1);
+                            this.trackingStatus.textContent = 'MediaPipe loaded successfully!';
+                            return true;
+                        }
+                        
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                        
+                        if (attempts % 10 === 0) {
+                            console.log(`Still waiting... (${attempts/10}s) - Strategy ${strategy + 1}`);
+                            this.trackingStatus.textContent = `Loading MediaPipe... (${attempts/10}s)`;
+                        }
+                    }
+                    
+                    // If strategy failed, try reloading scripts
+                    if (strategy < 2) {
+                        console.log('⚠️ Strategy failed, trying script reload...');
+                        await this.reloadMediaPipeScripts();
+                    }
+                }
+                
+                console.error('❌ All MediaPipe loading strategies failed');
+                throw new Error('MediaPipe failed to load. Please check your internet connection and try refreshing the page.');
+            }
+            
+            async reloadMediaPipeScripts() {
+                console.log('🔄 Reloading MediaPipe scripts...');
+                
+                // Remove existing scripts
+                const scripts = document.querySelectorAll('script[src*="mediapipe"]');
+                scripts.forEach(script => script.remove());
+                
+                // Add scripts with different CDN
+                const scriptUrls = [
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js',
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/control_utils@0.6.1629159505/control_utils.js', 
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js',
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js'
+                ];
+                
+                for (const url of scriptUrls) {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = url;
+                        script.crossOrigin = 'anonymous';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                }
+                
+                // Wait a bit for scripts to initialize
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            async setupMediaPipe() {
+                this.faceMesh = new FaceMesh({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+                });
+                
+                this.faceMesh.setOptions({
+                    maxNumFaces: 1,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.7,
+                    minTrackingConfidence: 0.7
+                });
+                
+                this.faceMesh.onResults((results) => this.onResults(results));
+                
+                this.camera = new Camera(this.eyeTrackerVideo, {
+                    onFrame: async () => {
+                        if (this.faceMesh && this.isTracking) {
+                            await this.faceMesh.send({ image: this.eyeTrackerVideo });
+                        }
+                    },
+                    width: 640,
+                    height: 480
+                });
+            }
+            
+            onResults(results) {
+                this.lastResults = results;
+                
+                if (!this.isTracking) return;
+                
+                // Debug: Check if we're getting results
+                if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+                    console.log('⚠️ No face detected');
+                    this.trackingStatus.textContent = '👁️ Eye Tracking: Active - No face detected';
+                    return;
+                }
+                
+                const landmarks = results.multiFaceLandmarks[0];
+                console.log(`✅ Face detected with ${landmarks.length} landmarks`);
+                
+                if (landmarks.length < 478) {
+                    console.log('⚠️ Insufficient landmarks for iris tracking');
+                    this.trackingStatus.textContent = '👁️ Eye Tracking: Active - Need better lighting';
+                    return;
+                }
+                
+                console.log('✅ Iris landmarks available');
+                this.trackingStatus.textContent = '👁️ Eye Tracking: Active - Iris detected!';
+                
+                // Process iris tracking using advanced method from working-eye-tracker
+                this.processIrisTracking(landmarks);
+            }
+            
+            processIrisTracking(landmarks) {
+                try {
+                    // Extract iris data
+                    const irisData = this.extractIrisData(landmarks);
+                    if (!irisData) return;
+                    
+                    // Calculate gaze
+                    const gazePoint = this.calculateGazeFromIris(irisData);
+                    if (!gazePoint) return;
+                    
+                    // Apply temporal smoothing to reduce jitter
+                    const smoothedGaze = this.applySmoothingFilter(gazePoint);
+                    
+                    // Map gaze to video coordinates
+                    const videoGaze = this.mapGazeToVideo(smoothedGaze);
+                    
+                    // Update gaze indicator
+                    this.updateGazeIndicator(videoGaze);
+                    
+                    // Update visualizations
+                    if (this.heatmapEnabled) {
+                        this.addHeatmapPoint(videoGaze);
+                    }
+                    
+                    // Detect zone interaction
+                    const zone = this.detectVideoZone(videoGaze);
+                    this.updateCurrentZone(zone);
+                    
+                    // Store analytics data
+                    this.recordGazeData(videoGaze, zone);
+                    
+                } catch (error) {
+                    console.error('Iris tracking error:', error);
+                }
+            }
+            
+            extractIrisData(landmarks) {
+                // Validate landmarks array
+                if (!landmarks || landmarks.length < 478) {
+                    console.warn('Invalid landmarks array:', landmarks?.length);
+                    return null;
+                }
+                
+                // Get iris landmarks
+                const leftIrisPoints = this.LEFT_IRIS_INDICES.map(i => landmarks[i]);
+                const rightIrisPoints = this.RIGHT_IRIS_INDICES.map(i => landmarks[i]);
+                
+                // Validate iris points
+                if (!leftIrisPoints.every(p => p && typeof p.x === 'number' && typeof p.y === 'number') || 
+                    !rightIrisPoints.every(p => p && typeof p.x === 'number' && typeof p.y === 'number')) {
+                    console.warn('Invalid iris points detected');
+                    return null;
+                }
+                
+                // Calculate iris centers
+                const leftIrisCenter = this.calculateCentroid(leftIrisPoints);
+                const rightIrisCenter = this.calculateCentroid(rightIrisPoints);
+                
+                console.log('Iris Centers:', { left: leftIrisCenter, right: rightIrisCenter });
+                
+                // Get eye boundaries using the correct landmarks
+                const leftEyeInner = landmarks[this.LEFT_EYE_CORNERS.inner];
+                const leftEyeOuter = landmarks[this.LEFT_EYE_CORNERS.outer];
+                const rightEyeInner = landmarks[this.RIGHT_EYE_CORNERS.inner];
+                const rightEyeOuter = landmarks[this.RIGHT_EYE_CORNERS.outer];
+                
+                // Calculate eye widths for normalization
+                const leftEyeWidth = Math.abs(leftEyeOuter.x - leftEyeInner.x);
+                const rightEyeWidth = Math.abs(rightEyeOuter.x - rightEyeInner.x);
+                
+                return {
+                    leftIris: leftIrisCenter,
+                    rightIris: rightIrisCenter,
+                    rawLeftIris: leftIrisPoints,
+                    rawRightIris: rightIrisPoints,
+                    leftEyeInner: leftEyeInner,
+                    leftEyeOuter: leftEyeOuter,
+                    rightEyeInner: rightEyeInner,
+                    rightEyeOuter: rightEyeOuter,
+                    leftEyeWidth: leftEyeWidth,
+                    rightEyeWidth: rightEyeWidth
+                };
+            }
+            
+            calculateGazeFromIris(irisData) {
+                if (!irisData || !irisData.leftIris || !irisData.rightIris) {
+                    console.warn('Invalid iris data for gaze calculation');
+                    return null;
+                }
+                
+                // Calculate average iris position (both eyes)
+                const avgIrisX = (irisData.leftIris.x + irisData.rightIris.x) / 2;
+                const avgIrisY = (irisData.leftIris.y + irisData.rightIris.y) / 2;
+                
+                console.log('Average iris position:', { x: avgIrisX, y: avgIrisY });
+                
+                // Simple gaze mapping - start with direct mapping
+                // Convert from face-relative coordinates to gaze coordinates
+                
+                // For X: map from face center outward
+                // Face center is around 0.5, iris movement relative to that
+                let gazeX = avgIrisX;
+                
+                // Apply much more sensitive amplification for eye-only movement
+                // Reduced amplification for better eye sensitivity (less head movement needed)
+                gazeX = (gazeX - 0.5) * 3.5 + 0.5;  // Increased sensitivity
+                
+                // Clamp to valid range
+                gazeX = Math.max(0.0, Math.min(1.0, gazeX));
+                
+                // For Y: use iris Y position with higher amplification too
+                let gazeY = avgIrisY;
+                gazeY = (gazeY - 0.5) * 2.5 + 0.5;  // Increased Y sensitivity
+                gazeY = Math.max(0.0, Math.min(1.0, gazeY));
+                
+                console.log('Final gaze coordinates:', { x: gazeX, y: gazeY });
+                
+                return {
+                    x: gazeX,
+                    y: gazeY,
+                    confidence: this.calculateConfidence(irisData)
+                };
+            }
+            
+            applySmoothingFilter(gazePoint) {
+                // Add current gaze point to history
+                this.gazeHistory.push({ x: gazePoint.x, y: gazePoint.y });
+                
+                // Keep only recent history
+                if (this.gazeHistory.length > this.gazeHistorySize) {
+                    this.gazeHistory.shift();
+                }
+                
+                // Calculate moving average
+                const avgX = this.gazeHistory.reduce((sum, point) => sum + point.x, 0) / this.gazeHistory.length;
+                const avgY = this.gazeHistory.reduce((sum, point) => sum + point.y, 0) / this.gazeHistory.length;
+                
+                // Update smoothed gaze
+                this.smoothedGaze = { x: avgX, y: avgY, confidence: gazePoint.confidence };
+                
+                return this.smoothedGaze;
+            }
+            
+            calculateConfidence(irisData) {
+                // Simple confidence based on iris detection quality
+                const leftSpread = this.calculatePointSpread(irisData.rawLeftIris);
+                const rightSpread = this.calculatePointSpread(irisData.rawRightIris);
+                return Math.min(1.0, (leftSpread + rightSpread) * 100);
+            }
+            
+            calculatePointSpread(points) {
+                const centroid = this.calculateCentroid(points);
+                const distances = points.map(p => 
+                    Math.sqrt(Math.pow(p.x - centroid.x, 2) + Math.pow(p.y - centroid.y, 2))
+                );
+                return distances.reduce((sum, d) => sum + d, 0) / distances.length;
+            }
+            
+            calculateCentroid(points) {
+                const sum = points.reduce((acc, point) => ({
+                    x: acc.x + point.x,
+                    y: acc.y + point.y
+                }), { x: 0, y: 0 });
+                
+                return {
+                    x: sum.x / points.length,
+                    y: sum.y / points.length
+                };
+            }
+            
+            mapGazeToVideo(gazePoint) {
+                const videoRect = this.mainVideo.getBoundingClientRect();
+                return {
+                    x: gazePoint.x * videoRect.width,
+                    y: gazePoint.y * videoRect.height,
+                    normalizedX: gazePoint.x,
+                    normalizedY: gazePoint.y
+                };
+            }
+            
+            updateGazeIndicator(videoGaze) {
+                // Show the gaze indicator
+                this.gazeIndicator.style.display = 'block';
+                
+                // Ensure gazePoint coordinates are in valid 0-1 range
+                const clampedX = Math.max(0, Math.min(1, videoGaze.normalizedX));
+                const clampedY = Math.max(0, Math.min(1, videoGaze.normalizedY));
+                
+                // Position it relative to the video overlay
+                this.gazeIndicator.style.left = videoGaze.x + 'px';
+                this.gazeIndicator.style.top = videoGaze.y + 'px';
+                
+                // Color coding for debugging - same as working eye tracker
+                if (videoGaze.normalizedX >= 0 && videoGaze.normalizedX <= 1 && videoGaze.normalizedY >= 0 && videoGaze.normalizedY <= 1) {
+                    this.gazeIndicator.style.background = '#ff0000'; // Red for valid range
+                    this.gazeIndicator.style.boxShadow = '0 3px 10px rgba(255,0,0,0.6)';
+                } else {
+                    this.gazeIndicator.style.background = '#ff6600'; // Orange for clamped values
+                    this.gazeIndicator.style.boxShadow = '0 3px 10px rgba(255,102,0,0.6)';
+                }
+                
+                console.log('Gaze indicator updated:', { 
+                    videoGaze, 
+                    clamped: { x: clampedX, y: clampedY } 
+                });
+            }
+            
+            detectVideoZone(videoGaze) {
+                const { normalizedX: x, normalizedY: y } = videoGaze;
+                
+                // Define video control zones
+                if (x >= 0.1 && x <= 0.35 && y >= 0.1 && y <= 0.25) return 'PLAY_PAUSE';
+                if (x >= 0.1 && x <= 0.7 && y >= 0.9 && y <= 1.0) return 'TIMELINE';
+                if (x >= 0.85 && x <= 1.0 && y >= 0.1 && y <= 0.25) return 'VOLUME';
+                if (x >= 0.85 && x <= 1.0 && y >= 0.9 && y <= 1.0) return 'FULLSCREEN';
+                if (x >= 0.2 && x <= 0.8 && y >= 0.3 && y <= 0.8) return 'CONTENT';
+                
+                return 'OUTSIDE';
+            }
+            
+            updateCurrentZone(zone) {
+                if (zone === this.currentZone) return;
+                
+                // Clear previous zone highlights
+                Object.values(this.zones).forEach(el => el.classList.remove('active'));
+                
+                // Highlight current zone
+                const zoneElements = {
+                    'PLAY_PAUSE': this.zones.playPause,
+                    'TIMELINE': this.zones.timeline,
+                    'VOLUME': this.zones.volume,
+                    'FULLSCREEN': this.zones.fullscreen,
+                    'CONTENT': this.zones.content
+                };
+                
+                if (zoneElements[zone]) {
+                    zoneElements[zone].classList.add('active');
+                }
+                
+                this.currentZone = zone;
+                this.currentZoneEl.textContent = zone.replace('_', ' ');
+            }
+            
+            addHeatmapPoint(videoGaze) {
+                const heatPoint = document.createElement('div');
+                heatPoint.className = 'gaze-heatmap';
+                heatPoint.style.left = videoGaze.x + 'px';
+                heatPoint.style.top = videoGaze.y + 'px';
+                
+                this.videoOverlay.appendChild(heatPoint);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    if (heatPoint.parentNode) {
+                        heatPoint.parentNode.removeChild(heatPoint);
+                    }
+                }, 3000);
+            }
+            
+            recordGazeData(videoGaze, zone) {
+                const timestamp = Date.now();
+                this.gazeData.push({
+                    timestamp,
+                    x: videoGaze.normalizedX,
+                    y: videoGaze.normalizedY,
+                    zone,
+                    videoTime: this.mainVideo.currentTime
+                });
+                
+                // Update analytics
+                if (zone === 'CONTENT') {
+                    this.analytics.focusTime += 100; // Approximate frame time
+                }
+                this.analytics.totalTime += 100;
+            }
+            
+            logInteraction(type) {
+                this.analytics.interactions.push({
+                    type,
+                    timestamp: Date.now(),
+                    videoTime: this.mainVideo.currentTime
+                });
+                console.log(`Video interaction: ${type} at ${this.mainVideo.currentTime}s`);
+            }
+            
+            toggleHeatmap() {
+                this.heatmapEnabled = !this.heatmapEnabled;
+                this.heatmapBtn.textContent = this.heatmapEnabled ? '🔥 Hide Heatmap' : '🔥 Show Heatmap';
+                this.heatmapBtn.classList.toggle('active');
+            }
+            
+            toggleZones() {
+                this.zonesVisible = !this.zonesVisible;
+                const zones = document.querySelector('.gaze-zones');
+                zones.style.display = this.zonesVisible ? 'block' : 'none';
+                this.zonesBtn.textContent = this.zonesVisible ? '👁️ Hide Zones' : '👁️ Show Zones';
+                this.zonesBtn.classList.toggle('active');
+            }
+            
+            calibrateForVideo() {
+                alert('Video calibration would map your gaze to video controls for precise interaction!');
+                // Implement calibration specific to video area
+            }
+            
+            startAnalyticsUpdater() {
+                setInterval(() => {
+                    // Update attention score
+                    const focusRatio = this.analytics.totalTime > 0 ? 
+                        (this.analytics.focusTime / this.analytics.totalTime) * 100 : 0;
+                    this.analytics.attentionScore = Math.round(focusRatio);
+                    this.attentionScore.textContent = this.analytics.attentionScore + '%';
+                    
+                    // Update focus time display
+                    const focusMinutes = Math.floor(this.analytics.focusTime / 60000);
+                    const focusSeconds = Math.floor((this.analytics.focusTime % 60000) / 1000);
+                    const totalMinutes = Math.floor(this.analytics.totalTime / 60000);
+                    const totalSeconds = Math.floor((this.analytics.totalTime % 60000) / 1000);
+                    
+                    this.focusTime.textContent = 
+                        `${focusMinutes}:${focusSeconds.toString().padStart(2, '0')} / ${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
+                    
+                    // Update session duration
+                    const sessionTime = Date.now() - this.sessionStartTime;
+                    const sessionMinutes = Math.floor(sessionTime / 60000);
+                    const sessionSeconds = Math.floor((sessionTime % 60000) / 1000);
+                    this.sessionDuration.textContent = `${sessionMinutes}:${sessionSeconds.toString().padStart(2, '0')}`;
+                    
+                    // Update progress bars
+                    document.getElementById('attentionProgress').style.width = this.analytics.attentionScore + '%';
+                    document.getElementById('focusProgress').style.width = focusRatio + '%';
+                    
+                }, 1000);
+            }
+        }
+        
+        // Initialize the dashboard when page loads
+        window.addEventListener('load', () => {
+            new VideoDashboardEyeTracker();
+        });
+    </script>
+</body>
+</html>
