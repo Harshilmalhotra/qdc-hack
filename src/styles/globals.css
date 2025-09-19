@@ -1,0 +1,268 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Accessibility Styles */
+:root {
+  --font-size-multiplier: 1;
+}
+
+/* High Contrast Theme */
+.high-contrast {
+  --tw-bg-opacity: 1;
+  background-color: rgb(0 0 0 / var(--tw-bg-opacity));
+  color: rgb(255 255 255 / var(--tw-text-opacity));
+}
+
+.high-contrast * {
+  border-color: #ffff00 !important;
+}
+
+.high-contrast .bg-white {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast .text-gray-600,
+.high-contrast .text-gray-700,
+.high-contrast .text-gray-800,
+.high-contrast .text-gray-900 {
+  color: #ffffff !important;
+}
+
+.high-contrast .bg-blue-600,
+.high-contrast .bg-blue-500 {
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+}
+
+/* Font Size Classes */
+.text-small {
+  --font-size-multiplier: 0.875;
+}
+
+.text-medium {
+  --font-size-multiplier: 1;
+}
+
+.text-large {
+  --font-size-multiplier: 1.25;
+}
+
+.text-xl {
+  --font-size-multiplier: 1.5;
+}
+
+/* Apply font size multiplier */
+* {
+  font-size: calc(1rem * var(--font-size-multiplier));
+}
+
+h1 { font-size: calc(2.25rem * var(--font-size-multiplier)); }
+h2 { font-size: calc(1.875rem * var(--font-size-multiplier)); }
+h3 { font-size: calc(1.5rem * var(--font-size-multiplier)); }
+h4 { font-size: calc(1.25rem * var(--font-size-multiplier)); }
+
+/* Reduced Motion */
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Screen Reader Only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only.focus:not(.sr-only) {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Focus Styles */
+*:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.high-contrast *:focus {
+  outline: 3px solid #ffff00;
+  outline-offset: 3px;
+}
+
+/* Enhanced Button Styles for Accessibility */
+button {
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Line Height for Better Readability */
+p, li, span {
+  line-height: 1.6;
+}
+
+/* Enhanced Link Styles */
+a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Card Hover Effects */
+.card-hover {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.reduce-motion .card-hover:hover {
+  transform: none;
+}
+
+/* Gaze Indicator Animation */
+@keyframes gaze-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.gaze-indicator {
+  animation: gaze-pulse 1s ease-in-out infinite;
+}
+
+.reduce-motion .gaze-indicator {
+  animation: none;
+}
+
+/* Loading Spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.reduce-motion .animate-spin {
+  animation: none;
+}
+
+/* XP Gain Animation */
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -30px, 0);
+  }
+  70% {
+    transform: translate3d(0, -15px, 0);
+  }
+  90% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 1s ease-in-out;
+}
+
+.reduce-motion .animate-bounce {
+  animation: none;
+}
+
+/* Progress Bar Animation */
+.progress-bar {
+  transition: width 0.5s ease-out;
+}
+
+.reduce-motion .progress-bar {
+  transition: none;
+}
+
+/* Screen Reader Mode Enhancements */
+.screen-reader-mode {
+  /* Increase spacing for better navigation */
+}
+
+.screen-reader-mode button,
+.screen-reader-mode a,
+.screen-reader-mode [tabindex] {
+  margin: 4px;
+  padding: 8px;
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  * {
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  button {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  
+  .text-xs { font-size: calc(0.75rem * var(--font-size-multiplier)); }
+  .text-sm { font-size: calc(0.875rem * var(--font-size-multiplier)); }
+  .text-base { font-size: calc(1rem * var(--font-size-multiplier)); }
+  .text-lg { font-size: calc(1.125rem * var(--font-size-multiplier)); }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  :root:not(.high-contrast) {
+    color-scheme: dark;
+  }
+}
+
+/* Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
