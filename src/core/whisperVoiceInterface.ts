@@ -238,7 +238,16 @@ class WhisperVoiceInterface {
       'main': 'DASHBOARD',
       'repeat': 'REPEAT',
       'again': 'REPEAT',
-      'say again': 'REPEAT'
+      'say again': 'REPEAT',
+      'stop': 'STOP',
+      'halt': 'STOP',
+      'pause': 'STOP',
+      'quit': 'STOP',
+      'exit': 'STOP',
+      'start': 'START',
+      'begin': 'START',
+      'resume': 'START',
+      'listen': 'START'
     } as const;
 
     // Check exact matches

@@ -57,6 +57,9 @@ class VoiceInterface {
           case '5':
             command = 'repeat';
             break;
+          case '6':
+            command = 'stop';
+            break;
         }
 
         if (command) {
@@ -164,7 +167,16 @@ class VoiceInterface {
       'main': 'DASHBOARD',
       'repeat': 'REPEAT',
       'again': 'REPEAT',
-      'say again': 'REPEAT'
+      'say again': 'REPEAT',
+      'stop': 'STOP',
+      'halt': 'STOP',
+      'pause': 'STOP',
+      'quit': 'STOP',
+      'exit': 'STOP',
+      'start': 'START',
+      'begin': 'START',
+      'resume': 'START',
+      'listen': 'START'
     } as const;
 
     // Check exact matches

@@ -1,11 +1,11 @@
 export interface GazeEvent {
-  action: 'NEXT' | 'BACK' | 'SELECT' | 'DASHBOARD' | 'FALLBACK';
+  action: 'NEXT' | 'BACK' | 'SELECT' | 'DASHBOARD' | 'STOP' | 'FALLBACK';
   zone: 'LEFT' | 'RIGHT' | 'CENTER' | 'DOWN' | 'NONE';
   confidence: number;
 }
 
 export interface VoiceEvent {
-  action: 'NEXT' | 'BACK' | 'DASHBOARD' | 'REPEAT' | 'FALLBACK';
+  action: 'NEXT' | 'BACK' | 'DASHBOARD' | 'REPEAT' | 'STOP' | 'FALLBACK';
   command: string;
   confidence: number;
 }

@@ -4,6 +4,7 @@ import { ProgressBar } from './ProgressBar';
 import { interactionManager } from '../core/interactionManager';
 import { analytics } from '../core/analytics';
 import { voiceInterface } from '../core/voiceInterface';
+import { whisperVoiceInterface } from '../core/whisperVoiceInterface';
 import { mockLessons } from '../utils/mockData';
 import type { LessonCard as LessonCardType } from '../types';
 
@@ -12,6 +13,7 @@ export function Dashboard() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [gazedIndex, setGazedIndex] = useState<number | null>(null);
   const [showOfflineBanner, setShowOfflineBanner] = useState(!navigator.onLine);
+  const [voiceActive, setVoiceActive] = useState(true);
 
   // Handle dashboard actions from interaction manager
   const handleDashboardAction = useCallback((action: string) => {
@@ -32,6 +34,12 @@ export function Dashboard() {
         break;
       case 'repeatContent':
         handleRepeatContent();
+        break;
+      case 'stopAction':
+        handleStopAction();
+        break;
+      case 'startAction':
+        handleStartAction();
         break;
       case 'showFallbackControls':
         // Show keyboard instructions or alternative controls
@@ -64,7 +72,7 @@ export function Dashboard() {
     const handleGazeZone = (event: CustomEvent) => {
       const { zone } = event.detail;
       console.log('Dashboard received gaze zone:', zone);
-      
+
       // Provide visual feedback for gaze zones
       if (zone === 'LEFT' && selectedIndex > 0) {
         setGazedIndex(selectedIndex - 1);
@@ -80,6 +88,25 @@ export function Dashboard() {
     document.addEventListener('gazeZoneChange', handleGazeZone as EventListener);
     return () => document.removeEventListener('gazeZoneChange', handleGazeZone as EventListener);
   }, [selectedIndex, lessons.length]);
+
+  // Handle keyboard shortcuts for stop/start
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Escape key to stop voice commands
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleStopAction();
+      }
+      // Space key to start/resume voice commands
+      else if (event.key === ' ' && event.ctrlKey) {
+        event.preventDefault();
+        handleStartAction();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleLessonSelect = (lesson: LessonCardType) => {
     if (lesson.completed) {
@@ -112,6 +139,38 @@ export function Dashboard() {
       const text = `Currently selected: ${currentLesson.title}. ${currentLesson.description}`;
       await voiceInterface.speak(text);
     }
+  };
+
+  const handleStopAction = () => {
+    console.log('🛑 STOP action triggered!');
+
+    // Stop any ongoing speech synthesis
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      console.log('🔇 Speech synthesis cancelled');
+    }
+
+    // Stop both voice recognition interfaces
+    voiceInterface.stopListening();
+    whisperVoiceInterface.stopListening();
+    setVoiceActive(false);
+    console.log('🎤 All voice recognition stopped');
+
+    // Announce the stop action
+    announceToScreenReader('Voice commands stopped. Press Escape to stop or Ctrl+Space to start.');
+  };
+
+  const handleStartAction = () => {
+    console.log('🎤 START action triggered!');
+
+    // Start both voice recognition interfaces
+    voiceInterface.startListening();
+    whisperVoiceInterface.startListening();
+    setVoiceActive(true);
+    console.log('🎤 Voice recognition started');
+
+    // Announce the start action
+    announceToScreenReader('Voice commands activated. You can now use voice commands.');
   };
 
   const announceToScreenReader = (message: string) => {
@@ -192,11 +251,11 @@ export function Dashboard() {
             <strong>🤖 Whisper Voice:</strong> "next", "back", "select", "complete", "dashboard" (low latency AI)
           </div>
           <div>
-            <strong>⌨️ Keyboard:</strong> Arrow keys to navigate, Enter/Space to select
+            <strong>⌨️ Keyboard:</strong> Arrow keys to navigate, Enter/Space to select, Escape to stop voice, Ctrl+Space to start voice
           </div>
         </div>
         <div className="bg-green-100 border border-green-300 rounded p-3 text-green-800 text-sm">
-          <strong>🎮 How to Use the Demo:</strong> 
+          <strong>🎮 How to Use the Demo:</strong>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
             <div>
               <strong>👁️ Gaze Simulation:</strong>
@@ -209,16 +268,21 @@ export function Dashboard() {
             </div>
             <div>
               <strong>🎤 Voice Commands:</strong>
+              <span className={`ml-2 px-2 py-1 rounded text-xs ${voiceActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {voiceActive ? '🟢 Active' : '🔴 Stopped'}
+              </span>
               <ul className="list-disc list-inside text-xs mt-1">
                 <li>"next" or "back" → Navigate</li>
                 <li>"select" or "complete" → Choose lesson</li>
                 <li>"read aloud" or "repeat" → Read content</li>
                 <li>"dashboard" → Go to top</li>
+                <li>"stop" or "halt" → Stop voice commands</li>
+                <li>"start" or "resume" → Resume voice commands</li>
               </ul>
             </div>
           </div>
           <div className="mt-2 text-xs bg-blue-50 p-2 rounded">
-            <strong>💡 Current:</strong> HTTP mode with mouse simulation. 
+            <strong>💡 Current:</strong> HTTP mode with mouse simulation.
             <strong>For camera/mic:</strong> Edit vite.config.ts, set https: true, restart server, accept certificate.
           </div>
         </div>

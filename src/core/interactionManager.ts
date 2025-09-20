@@ -107,6 +107,14 @@ class InteractionManager {
         console.log('🎯 Executing REPEAT action');
         this.callDashboardHandler('repeatContent');
       },
+      'STOP': () => {
+        console.log('🎯 Executing STOP action');
+        this.callDashboardHandler('stopAction');
+      },
+      'START': () => {
+        console.log('🎯 Executing START action');
+        this.callDashboardHandler('startAction');
+      },
       'FALLBACK': () => {
         console.log('🎯 Executing FALLBACK action');
         this.callDashboardHandler('showFallbackControls');
